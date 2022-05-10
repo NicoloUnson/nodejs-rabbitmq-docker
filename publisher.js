@@ -1,28 +1,22 @@
 const amqplib = require('amqplib');
 const amqpUrl = process.env.AMQP_URL || 'amqp://localhost:5673';
 
-(async () => {
+const publishMessage = async (message) => {
     const connection = await amqplib.connect(amqpUrl, 'heartbeat=60');
     const channel = await connection.createChannel();
     try {
-        console.log('Publishing');
-        const exchange = 'user.signed_up';
-        const queue = 'user.sign_up_email';
-        const routingKey = 'sign_up_email';
+        const exchange = 'pse.stream';
+        const queue = 'pse.stream_messages';
+        const routingKey = 'stream_messages';
 
         await channel.assertExchange(exchange, 'direct', { durable: true });
         await channel.assertQueue(queue, { durable: true });
         await channel.bindQueue(queue, exchange, routingKey);
 
-        const msg = {
-            id: Math.floor(Math.random() * 1000),
-            email: 'user@domail.com',
-            name: 'firstname lastname'
-        };
         await channel.publish(
             exchange,
             routingKey,
-            Buffer.from(JSON.stringify(msg))
+            Buffer.from(message)
         );
         console.log('Message published');
     } catch (e) {
@@ -33,5 +27,8 @@ const amqpUrl = process.env.AMQP_URL || 'amqp://localhost:5673';
         await connection.close();
         console.info('Channel and connection closed');
     }
-    process.exit(0);
-})();
+}
+
+module.exports = {
+    publishMessage
+}
