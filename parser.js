@@ -3,6 +3,7 @@ const net = require("net");
 const fs = require("fs");
 
 const _ = require("lodash");
+const throttledQueue = require('throttled-queue')
 
 const socket = new net.Socket();
 
@@ -11,6 +12,8 @@ const publisher = require('./publisher');
 const STX = "\u0002";
 const RS = "\u001e";
 const ETX = "\u0003";
+
+let throttle = throttledQueue(15, 1000)
 
 const parser = {
   98: {
@@ -307,7 +310,10 @@ const parseStreamData = (utf) => {
           return console.log(err);
       }
   }); 
-    publisher.publishMessage(JSON.stringify(entry));
+  throttle(function(){
+    publisher.publishMessage(JSON.stringify(entry))
+      // do parsing
+    })
   });
 };
 
@@ -318,14 +324,12 @@ socket.on("error", (err) => {
 let toBeParsed = "";
 
 socket.on("data", (data) => {
-  console.log("this is data", data);
   const utf = data.toString("binary");
   toBeParsed += utf;
 
   if (toBeParsed.endsWith(ETX)) {
     parseStreamData(toBeParsed);
     toBeParsed = "";
-    console.count();
   }
 });
 

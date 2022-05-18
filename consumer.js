@@ -4,42 +4,120 @@ const amqpUrl = process.env.AMQP_URL || 'amqp://localhost:5673';
 const mongoose = require("mongoose")
 require('dotenv').config()
 const message = require("./message")
-const indices = require("./indices")
-const streammessage = require("./streamMessage")
+const indices = require("./models/indices")
+const stockKeys = require("./constants/index");
+const stock = require('./models/stock');
+const volume = require('./models/volume');
+const price = require('./models/price');
+const bidandask = require('./models/bidandask');
+const streammessages = require('./models/streammessages');
+
+
+
 mongoose.connect(`${process.env.MONGO_URI}/${process.env.DB_NAME}`, { useNewUrlParser: true, useUnifiedTopology: true })
   .catch(err => {
     console.log("Could not connect to database:", err);
   });
 async function processMessage(msg) {
-    let a = JSON.parse(msg.content.toString());
+    const s = 
+        {'short_name': 'Short name',
+        'full_name': 'Full name',
+        'symbol': 'Code',
+        'isin': 'ISIN'}
 
+    const v = {
+        'last_transacted_volume': 'Last Transacted Volume',
+        'total_traded_volume': 'Total Traded Volume',
+        'total_sell_transaction_volume': 'Total Sell Transaction Volume',
+        'total_buy_transaction_volume': 'Total Buy Transaction Volume'
+    }
+    
+    const p = {
+        'previous_day_closing_price': 'Previous Day Closing Price',
+        'adjusted_previous_day_closing_price': 'Adjusted Previous Day Closing Price',
+        'open_price': 'Open Price',
+        'highest_price': 'Highest Price',
+        'lowest_price': 'Lowest Price',
+        'last_transacted_price': 'Last Transacted Price',
+        'price_vwap': 'Price VWAP',
+        'floor_price': 'Floor Price',
+        'ceiling_price': 'Ceiling Price',
+        'strike_price': 'Strike Price',
+        'fiftytwo_week_high': '52 week highest price',
+        'fiftytwo_week_low': '52 week lowest price'
+    }
+    let a = JSON.parse(msg.content.toString());
     let b = Object.keys(a);
 
     try {
-
+        let message = {symbol: a[b[0]]['Code'], data: {...a[b[0]]}};
+        await streammessages.create(message);
         if(b.includes('Stock/Instrument Information')) {
             market = a[b[0]];
-            
-            let price_change = (market['Open Price'] - market['Price VWAP']) / (market['Open Price'] * 100)
-            let o = {}
-
             let u = Object.keys(market);
-            for(key in u) {
-                o[u[key]] = market[u[key]];
+            
+        
+            
+            let findStock = await stock.find({symbol: market['Code']})
+            let o = {}
+            let propert_names = Object.getOwnPropertyNames(s);
+            for(key in propert_names) {
+                o[propert_names[key]] = market[s[propert_names[key]]]
             }
-            let findStock = await streammessage.find({symbol: market['Code']})
-            if(findStock.length > 0) {
-                let newData = findStock[0].data;
-                for(key in u) {
-                    newData[u[key]] = market[u[key]];
+            let st = await stock.findOneAndUpdate({symbol: market['Code']},o,{ upsert: true, new: true, setDefaultsOnInsert: true });
+            if(findStock.length === 0) {
+            } else {
+                //volume model
+                if(Object.values(v).some(x=> u.includes(x))) {
+                    let vol_names = Object.getOwnPropertyNames(v);
+                    let vol = {}
+                    for(key in vol_names) {
+                        if(market[v[vol_names[key]]] !== undefined) {
+                            vol[vol_names[key]] = market[v[vol_names[key]]]
+                        }else {
+                            vol[vol_names[key]] = 'NA'
+                        }
+                        
+                    }
+                    vol.stock = findStock[0]._id;
+                    let vo = await volume.create(vol);
                 }
-                let updateStock = await streammessage.findOneAndUpdate({symbol: market['Code']}, {data:{...newData}}, {new:true, upsert: true} )
+                
 
-            } else{
-            let updateStock = await streammessage.findOneAndUpdate({symbol: market['Code']}, {data:{...o}}, {new:true, upsert: true} )
+                //prices model
+                if(Object.values(p).some(x=> u.includes(x))) {
+                    let pri_names = Object.getOwnPropertyNames(p)
+                    let pri = {}
+                    for(key in pri_names) {
+                        if(market[p[pri_names[key]]] !== undefined) {
+                            pri[pri_names[key]] = market[p[pri_names[key]]]
+                        }else {
+                            pri[pri_names[key]] = 'NA'
+                        }
+                        
+                    }
+                    pri.stock = findStock[0]._id;
+                    let pr = await price.create(pri)
+                }
+                
+                //bid and ask model 
 
+                let bids = {}
+                let asks = {}
+                u.forEach(function(x) {
+                    if(x.includes('Bid'))  {
+                        bids[x] = market[x]
+                    }else if (x.includes('Ask')) {
+                        asks[x] = market[x]
+                    } 
+                })
+                if(bids !== {} || asks !=={}) {
+                    let baa = {bids,asks,stock:findStock[0]._id}
+                    let ba = await bidandask.create(baa);
+                }
+                
             }
-
+           
         }
 
         if(b.includes('Indices Information')) {
