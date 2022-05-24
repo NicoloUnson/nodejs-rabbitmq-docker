@@ -44,20 +44,22 @@ async function processMessage(msg) {
         'ceiling_price': 'Ceiling Price',
         'strike_price': 'Strike Price',
         'fiftytwo_week_high': '52 week highest price',
-        'fiftytwo_week_low': '52 week lowest price'
+        'fiftytwo_week_low': '52 week lowest price',
+        'value': 'Total Traded Value'
     }
     let a = JSON.parse(msg.content.toString());
     let b = Object.keys(a);
 
     try {
-        let message = {symbol: a[b[0]]['Code'], data: {...a[b[0]]}};
-        await streammessages.create(message);
+        
         if(b.includes('Stock/Instrument Information')) {
+
+            let message = {symbol: a[b[0]]['Code'], data: {...a[b[0]]}};
+            await streammessages.create(message);
             market = a[b[0]];
             let u = Object.keys(market);
             
         
-            
             let findStock = await stock.find({symbol: market['Code']})
             let o = {}
             let propert_names = Object.getOwnPropertyNames(s);
@@ -68,36 +70,57 @@ async function processMessage(msg) {
             if(findStock.length === 0) {
             } else {
                 //volume model
-                if(Object.values(v).some(x=> u.includes(x))) {
+                if(Object.values(v).every(x=> u.includes(x))) {
+
                     let vol_names = Object.getOwnPropertyNames(v);
                     let vol = {}
                     for(key in vol_names) {
                         if(market[v[vol_names[key]]] !== undefined) {
                             vol[vol_names[key]] = market[v[vol_names[key]]]
                         }else {
-                            vol[vol_names[key]] = 'NA'
+                            vol[vol_names[key]] = 0
                         }
                         
                     }
                     vol.stock = findStock[0]._id;
                     let vo = await volume.create(vol);
+                    let updateStockValues = {
+                        'volume': market['Last Transacted Volume'],
+                    }
+                    await stock.findByIdAndUpdate({_id:findStock[0]._id }, updateStockValues)
+
                 }
                 
 
                 //prices model
-                if(Object.values(p).some(x=> u.includes(x))) {
+                if(Object.values(p).every(x=> u.includes(x))) {
                     let pri_names = Object.getOwnPropertyNames(p)
                     let pri = {}
                     for(key in pri_names) {
                         if(market[p[pri_names[key]]] !== undefined) {
                             pri[pri_names[key]] = market[p[pri_names[key]]]
                         }else {
-                            pri[pri_names[key]] = 'NA'
+                            pri[pri_names[key]] = 0
                         }
                         
                     }
                     pri.stock = findStock[0]._id;
                     let pr = await price.create(pri)
+                    
+                    let price_change =  ((market['Last Transacted Price'] -  market['Open Price'])/market['Open Price']) * 100;
+
+                    let updateStockValues = {
+                        'open_price': market['Open Price'] || 0,
+                        'high_price': market['Highest Price'] || 0,
+                        'low_price': market['Lowest Price'] || 0,
+                        'curr_price': market['Last Transacted Price'] || 0,
+                        'fiftytwo_week_high': market['52 week highest price'] || 0,
+                        'volume': market['Total Traded Volume'] || 0,
+                        'market_cap': market['Total Traded Value'] || 0,
+                        'price_change': price_change || 0
+                    }
+
+                    await stock.findByIdAndUpdate({_id:findStock[0]._id }, updateStockValues, {upsert: true, new: true, setDefaultsOnInsert: true})
                 }
                 
                 //bid and ask model 
@@ -112,7 +135,7 @@ async function processMessage(msg) {
                     } 
                 })
                 if(bids !== {} || asks !=={}) {
-                    let baa = {bids,asks,stock:findStock[0]._id}
+                    let baa = {bids,asks,stock:findStock[0]._id,time:market['Market Data Time']}
                     let ba = await bidandask.create(baa);
                 }
                 

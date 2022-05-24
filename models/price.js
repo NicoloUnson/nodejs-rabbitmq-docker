@@ -2,18 +2,19 @@ const mongoose = require("mongoose");
 
 let priceSchema = new mongoose.Schema({
     stock: { type:  mongoose.Schema.Types.ObjectId, ref:'mt_stocks'},
-    previous_day_closing_price: String,
-    adjusted_previous_day_closing_price: String,
-    open_price: String,
-    highest_price: String,
-    lowest_price: String,
-    last_transacted_price: String,
-    price_vwap: String,
-    floor_price: String,
-    ceiling_price: String,
-    strike_price: String,
-    fiftytwo_week_high: String,
-    fiftytwo_week_low: String
+    previous_day_closing_price: Number,
+    adjusted_previous_day_closing_price: Number,
+    open_price: Number,
+    highest_price: Number,
+    lowest_price: Number,
+    last_transacted_price: Number,
+    price_vwap: Number,
+    floor_price: Number,
+    ceiling_price: Number,
+    strike_price: Number,
+    fiftytwo_week_high: Number,
+    fiftytwo_week_low: Number,
+    value: Number
 }, {
     timestamps: true
 })
