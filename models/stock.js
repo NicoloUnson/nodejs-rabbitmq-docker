@@ -14,6 +14,7 @@ let stockSchema = new mongoose.Schema({
     fiftytwo_week_low: Number,
     market_cap: Number,
     volume: Number,
+    trades: Number
 }, {
     timestamps: true
 })

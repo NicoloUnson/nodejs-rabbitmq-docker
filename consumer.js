@@ -86,6 +86,7 @@ async function processMessage(msg) {
                     let vo = await volume.create(vol);
                     let updateStockValues = {
                         'volume': market['Last Transacted Volume'],
+                        'trades': market['Total Traded Volume']
                     }
                     await stock.findByIdAndUpdate({_id:findStock[0]._id }, updateStockValues)
 
@@ -110,14 +111,15 @@ async function processMessage(msg) {
                     let price_change =  ((market['Last Transacted Price'] -  market['Open Price'])/market['Open Price']) * 100;
 
                     let updateStockValues = {
-                        'open_price': market['Open Price'] || 0,
-                        'high_price': market['Highest Price'] || 0,
-                        'low_price': market['Lowest Price'] || 0,
-                        'curr_price': market['Last Transacted Price'] || 0,
-                        'fiftytwo_week_high': market['52 week highest price'] || 0,
-                        'volume': market['Total Traded Volume'] || 0,
-                        'market_cap': market['Total Traded Value'] || 0,
-                        'price_change': price_change || 0
+                        'open_price': market['Open Price'] ? market['Open Price'] : 0,
+                        'high_price': market['Highest Price'] ? market['Highest Price'] : 0,
+                        'low_price': market['Lowest Price'] ? market['Lowest Price']: 0,
+                        'curr_price': market['Last Transacted Price'] ? market['Last Transacted Price']: 0,
+                        'fiftytwo_week_high': market['52 week highest price']? market['52 week highest price']: 0,
+                        'volume': market['Total Traded Volume'] ? market['Total Traded Volume']:0,
+                        'market_cap': market['Total Traded Value'] ? market['Total Traded Value'] :0,
+                        'price_change': price_change ? price_change : 0,
+                        'value':price_change
                     }
 
                     await stock.findByIdAndUpdate({_id:findStock[0]._id }, updateStockValues, {upsert: true, new: true, setDefaultsOnInsert: true})
