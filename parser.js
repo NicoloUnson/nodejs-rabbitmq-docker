@@ -13,7 +13,7 @@ const STX = "\u0002";
 const RS = "\u001e";
 const ETX = "\u0003";
 
-let throttle = throttledQueue(15, 1000)
+let throttle = throttledQueue(100, 1000)
 
 const parser = {
   98: {
@@ -302,14 +302,10 @@ const parseStreamData = (utf) => {
         ? keyDescription[value]
         : value;
     });
+    valueDetails['time_server'] = new Date();
     const entry = {
       [protocolDescription]: valueDetails,
     };
-    fs.appendFile("/Users/nosnu/Desktop/tlog.txt", JSON.stringify(entry)+ "\n", function(err) {
-      if(err) {
-          return console.log(err);
-      }
-  }); 
   throttle(function(){
     publisher.publishMessage(JSON.stringify(entry))
       // do parsing
