@@ -238,9 +238,8 @@ async function processMessage(msg) {
                         asks[x] = market[x]
                     } 
                 })
-                if(bids !== {} || asks !=={}) {
-                    let baa = {bids,asks,stock:findStock[0]._id,time:market['Market Data Time']}
-                    let ba = await bidandask.create(baa);
+                if(bids !== {} && asks !=={}) {
+                    let ba = await bidandask.findOneAndUpdate({symbol:market['Code']},{bids,asks,symbol:market['Code'],time:market['Market Data Time']},{new:true,upsert: true });
                 }
                 
             }

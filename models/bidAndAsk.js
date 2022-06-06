@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 let bidAndAskSchema = new mongoose.Schema({
     stock: { type:  mongoose.Schema.Types.ObjectId, ref:'mt_stocks'},
+    symbol: String,
     bids: Object,
     asks: Object,
     time: String
