@@ -306,10 +306,10 @@ const parseStreamData = (utf) => {
     const entry = {
       [protocolDescription]: valueDetails,
     };
-  throttle(function(){
-    publisher.publishMessage(JSON.stringify(entry))
-      // do parsing
-    })
+    throttle(function(){
+      publisher.publishMessage(JSON.stringify(entry))
+        // do parsing
+      })
   });
 };
 

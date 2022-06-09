@@ -12,6 +12,7 @@ const price = require('./models/price');
 const bidandask = require('./models/bidandask');
 const streammessages = require('./models/streammessages');
 const newmessage = require("./models/newmessage");
+const transactions = require("./models/transaction");
 
 
 mongoose.connect(`${process.env.MONGO_URI}/${process.env.DB_NAME}`, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -141,6 +142,18 @@ async function processMessage(msg) {
         fiftytwo_week_low: "52 week lowest price",
         time_server: "time_server"
     }
+
+    const transactionSchema = {
+        transaction_number: 'Transaction number',
+        last_transacted_price: 'Last Transacted Price',
+        last_transacted_volume: 'Last Transacted Volum',
+        last_transacted_value: 'Last Transacted Value',
+        total_traded_volume: 'Total Traded Volume',
+        total_traded_value: 'Total Traded Value',
+        price_vwap: 'Price VWAP',
+        total_buy_transaction_volume: 'Total Buy Transaction Volume',
+        total_sell_transaction_volume: 'Total Sell Transaction Volume',
+    }
     let a = JSON.parse(msg.content.toString());
     let b = Object.keys(a);
 
@@ -148,8 +161,8 @@ async function processMessage(msg) {
         
         if(b.includes('Stock/Instrument Information')) {
             let market = a[b[0]];
-            let message = {symbol: a[b[0]]['Code'], data: {...a[b[0]]}};
-            await streammessages.create(message);
+            // let message = {symbol: a[b[0]]['Code'], data: {...a[b[0]]}};
+            // await streammessages.create(message);
 
             let mePNames = Object.keys(mes)
             let me = {}
@@ -240,6 +253,19 @@ async function processMessage(msg) {
                 })
                 if(bids !== {} && asks !=={}) {
                     let ba = await bidandask.findOneAndUpdate({symbol:market['Code']},{bids,asks,symbol:market['Code'],time:market['Market Data Time']},{new:true,upsert: true });
+                }
+
+                if(Object.values(transactionSchema).some(x => u.includes(x))) {
+                    let newTransaction = {}
+                    Object.keys(transactionSchema).map( x => {
+                        newTransaction[x] = market[transactionSchema[x]];
+                    })
+                    newTransaction['symbol'] = market['Code'];
+                    newTransaction['time_server']= market['time_server'];
+                    newTransaction['market_data_time'] = market['Market Data Time']
+                    if(newTransaction.transaction_number !== 0 && newTransaction.transaction_number !== null) {
+                        await transactions.create(newTransaction);
+                    }
                 }
                 
             }
