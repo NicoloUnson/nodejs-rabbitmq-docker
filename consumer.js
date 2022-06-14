@@ -46,7 +46,8 @@ async function processMessage(msg) {
         'strike_price': 'Strike Price',
         'fiftytwo_week_high': '52 week highest price',
         'fiftytwo_week_low': '52 week lowest price',
-        'value': 'Total Traded Value'
+        'value': 'Total Traded Value',
+        'time_server': 'time_server'
     }
 
     const mes = {
@@ -251,8 +252,8 @@ async function processMessage(msg) {
                         asks[x] = market[x]
                     } 
                 })
-                if(bids !== {} && asks !=={}) {
-                    let ba = await bidandask.findOneAndUpdate({symbol:market['Code']},{bids,asks,symbol:market['Code'],time:market['Market Data Time']},{new:true,upsert: true });
+                if(bids !== {} || asks !== {}) {
+                    let ba = await bidandask.findOneAndUpdate({symbol:market['Code']},{bids,asks,time:market['Market Data Time']},{new:true,upsert: true });
                 }
 
                 if(Object.values(transactionSchema).some(x => u.includes(x))) {
@@ -266,6 +267,9 @@ async function processMessage(msg) {
                     if(newTransaction.transaction_number !== 0 && newTransaction.transaction_number !== null) {
                         await transactions.create(newTransaction);
                     }
+
+                    await stock.findByIdAndUpdate({_id:findStock[0]._id }, {curr_price:newTransaction['last_transacted_price']}, {upsert: true, new: true, setDefaultsOnInsert: true})
+                    
                 }
                 
             }
@@ -293,7 +297,7 @@ async function processMessage(msg) {
 (async () => {
     const connection = await amqplib.connect(amqpUrl, 'heartbeat=60');
     const channel = await connection.createChannel();
-    channel.prefetch(10);
+    channel.prefetch(50);
     const queue = 'pse.stream_messages';
     process.once('SIGINT', async () => {
         console.log('got sigint, closing connection');

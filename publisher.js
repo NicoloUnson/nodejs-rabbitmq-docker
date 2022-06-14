@@ -18,14 +18,11 @@ const publishMessage = async (message) => {
             routingKey,
             Buffer.from(message)
         );
-        console.log('Message published');
     } catch (e) {
         console.error('Error in publishing message', e);
     } finally {
-        console.info('Closing channel and connection if available');
         await channel.close();
         await connection.close();
-        console.info('Channel and connection closed');
     }
 }
 
