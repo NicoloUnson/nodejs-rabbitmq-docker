@@ -13,7 +13,7 @@ const STX = "\u0002";
 const RS = "\u001e";
 const ETX = "\u0003";
 
-let throttle = throttledQueue(20, 1000)
+let throttle = throttledQueue(100, 1000)
 
 const parser = {
   98: {
@@ -308,7 +308,7 @@ const parseStreamData = (utf) => {
     };
     throttle(function(){
       publisher.publishMessage(JSON.stringify(entry))
-        // do parsing
+      console.log("publish data");
       })
   });
 };

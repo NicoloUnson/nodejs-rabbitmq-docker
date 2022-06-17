@@ -13,12 +13,14 @@ const bidandask = require('./models/bidandask');
 const streammessages = require('./models/streammessages');
 const newmessage = require("./models/newmessage");
 const transactions = require("./models/transaction");
+const kline = require("./models/klines");
 
 
-mongoose.connect(`${process.env.MONGO_URI}/${process.env.DB_NAME}`, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(`mongodb://localhost:27017/my_trade`, { useNewUrlParser: true, useUnifiedTopology: true })
   .catch(err => {
     console.log("Could not connect to database:", err);
   });
+
 async function processMessage(msg) {
     const s = 
         {'short_name': 'Short name',
@@ -270,6 +272,18 @@ async function processMessage(msg) {
 
                     await stock.findByIdAndUpdate({_id:findStock[0]._id }, {curr_price:newTransaction['last_transacted_price']}, {upsert: true, new: true, setDefaultsOnInsert: true})
                     
+                }
+
+                if(u.includes('Last Transacted Price')) {
+                    let klineObject = {}
+                    let s = await stock.findOne({symbol: market['Code']})
+                    klineObject['close_price'] = market['Last Transacted Price'];
+                    klineObject['symbol'] = market['Code']
+                    klineObject['high_price'] = market['Highest Price'] ? market['Highest Price'] : s.high_price;
+                    klineObject['low_price'] = market['Lowest Price'] ? market['Lowest Price'] : s.low_price;
+                    klineObject['open_price'] = market['Open Price'] ? market['Open Price'] : s.open_price;
+                    klineObject['time'] = market['time_server'];
+                    await kline.create(klineObject);
                 }
                 
             }
