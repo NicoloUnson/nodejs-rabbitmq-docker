@@ -22,7 +22,8 @@ let eodStockSchema = new mongoose.Schema({
         total_traded_volume: Number,
         total_sell_transaction_volume: Number,
         total_buy_transaction_volume: Number
-    }
+    },
+    date: Date
 }, {
     timestamps: true
 })
