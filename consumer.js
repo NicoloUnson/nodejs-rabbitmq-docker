@@ -231,7 +231,7 @@ async function processMessage(msg) {
                         'open_price': market['Open Price'] ? market['Open Price'] : 0,
                         'high_price': market['Highest Price'] ? market['Highest Price'] : 0,
                         'low_price': market['Lowest Price'] ? market['Lowest Price']: 0,
-                        'curr_price': market['Last Transacted Price'] ? market['Last Transacted Price']: 0,
+                        'last_transacted_price': market['Last Transacted Price'] ? market['Last Transacted Price']: 0,
                         'fiftytwo_week_high': market['52 week highest price']? market['52 week highest price']: 0,
                         'fiftytwo_week_low': market['52 week lowest price'] ? market['52 week lowest price'] : 0,
                         'volume': market['Total Traded Volume'] ? market['Total Traded Volume']:0,
@@ -270,7 +270,7 @@ async function processMessage(msg) {
                         await transactions.create(newTransaction);
                     }
 
-                    await stock.findByIdAndUpdate({_id:findStock[0]._id }, {curr_price:newTransaction['last_transacted_price']}, {upsert: true, new: true, setDefaultsOnInsert: true})
+                    await stock.findByIdAndUpdate({_id:findStock[0]._id }, {last_transacted_price:newTransaction['last_transacted_price']}, {upsert: true, new: true, setDefaultsOnInsert: true})
                     
                 }
 
