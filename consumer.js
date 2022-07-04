@@ -3,14 +3,12 @@ const amqpUrl = process.env.AMQP_URL || 'amqp://localhost:5673';
 
 const mongoose = require("mongoose")
 require('dotenv').config()
-const message = require("./message")
+
 const indices = require("./models/indices")
-const stockKeys = require("./constants/index");
 const stock = require('./models/stock');
 const volume = require('./models/volume');
 const price = require('./models/price');
 const bidandask = require('./models/bidandask');
-const streammessages = require('./models/streammessages');
 const newmessage = require("./models/newmessage");
 const transactions = require("./models/transaction");
 const kline = require("./models/klines");
@@ -231,7 +229,7 @@ async function processMessage(msg) {
                         'open_price': market['Open Price'] ? market['Open Price'] : 0,
                         'high_price': market['Highest Price'] ? market['Highest Price'] : 0,
                         'low_price': market['Lowest Price'] ? market['Lowest Price']: 0,
-                        'last_transacted_price': market['Last Transacted Price'] ? market['Last Transacted Price']: 0,
+                        'curr_price': market['Last Transacted Price'] ? market['Last Transacted Price']: 0,
                         'fiftytwo_week_high': market['52 week highest price']? market['52 week highest price']: 0,
                         'fiftytwo_week_low': market['52 week lowest price'] ? market['52 week lowest price'] : 0,
                         'volume': market['Total Traded Volume'] ? market['Total Traded Volume']:0,
@@ -270,18 +268,29 @@ async function processMessage(msg) {
                         await transactions.create(newTransaction);
                     }
 
-                    await stock.findByIdAndUpdate({_id:findStock[0]._id }, {last_transacted_price:newTransaction['last_transacted_price']}, {upsert: true, new: true, setDefaultsOnInsert: true})
+                    await stock.findByIdAndUpdate({_id:findStock[0]._id }, {curr_price:market['Last Transacted Price']}, {upsert: true, new: true, setDefaultsOnInsert: true})
                     
                 }
 
                 if(u.includes('Last Transacted Price')) {
                     let klineObject = {}
-                    let s = await stock.findOne({symbol: market['Code']})
+                    
+                    let updatedStock = {curr_price:market['Last Transacted Price'] }
+
+                    let s1 = await stock.findOne({symbol: market['Code']})
+                    if(market['Last Transacted Price'] > s1.highest_price) {
+                        updatedStock['high_price'] =  market['Last Transacted Price'];
+                    } else if (market['Last Transacted Price'] < s1.lowest_price) {
+                        updatedStock['low_price'] = market['Last Transacted Price'];
+                    }
+
+                    let s2 = await stock.findOneAndUpdate({symbol:market['Code']}, updatedStock, {upsert: true});
+                    
                     klineObject['close_price'] = market['Last Transacted Price'];
                     klineObject['symbol'] = market['Code']
-                    klineObject['high_price'] = market['Highest Price'] ? market['Highest Price'] : s.high_price;
-                    klineObject['low_price'] = market['Lowest Price'] ? market['Lowest Price'] : s.low_price;
-                    klineObject['open_price'] = market['Open Price'] ? market['Open Price'] : s.open_price;
+                    klineObject['high_price'] = market['Highest Price'] ? market['Highest Price'] : s2.high_price;
+                    klineObject['low_price'] = market['Lowest Price'] ? market['Lowest Price'] : s2.low_price;
+                    klineObject['open_price'] = market['Open Price'] ? market['Open Price'] : s2.open_price;
                     klineObject['time'] = market['time_server'];
                     await kline.create(klineObject);
                 }
