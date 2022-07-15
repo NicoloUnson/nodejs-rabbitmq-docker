@@ -278,9 +278,9 @@ async function processMessage(msg) {
                     let updatedStock = {curr_price:market['Last Transacted Price'] }
 
                     let s1 = await stock.findOne({symbol: market['Code']})
-                    if(market['Last Transacted Price'] > s1.highest_price) {
+                    if(market['Last Transacted Price'] > s1.high_price) {
                         updatedStock['high_price'] =  market['Last Transacted Price'];
-                    } else if (market['Last Transacted Price'] < s1.lowest_price) {
+                    } else if (market['Last Transacted Price'] < s1.low_price) {
                         updatedStock['low_price'] = market['Last Transacted Price'];
                     }
 
