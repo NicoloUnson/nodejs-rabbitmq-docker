@@ -330,5 +330,7 @@ socket.on("data", (data) => {
 });
 
 socket.connect(20000, "115.84.253.205", () => {
-  socket.write(`${STX}98${RS}1000=rpinnotech${RS}1001=rp1nn0t3ch${ETX}`);
+  socket.write(
+    `${STX}98${RS}1000=${process.env.N2N_SUBSCRIBER}${RS}1001=${process.env.N2N_PASSWORD}${ETX}`
+  );
 });
